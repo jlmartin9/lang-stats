@@ -1,36 +1,39 @@
-// Modules
-var express = require('express');
-var http = require('http');
-var socketio = require('socket.io');
-
-var github = require('octonode');
-var client = github.client();
-
 var p = function(d) {
     console.log(d);
 }
 
+// Modules
+
+var express = require('express');
+var http = require('http');
+var socketio = require('socket.io');
+var mongo = require('mongojs');
+var github = require('octonode');
+
 //Testing repo API
-var ghrepo = client.repo('jlmartin9/CIHSP');
 
-var lang;
+var client = github.client();
 
-ghrepo.languages(function(err, data, headers) {
-    // console.log("error: " + err);
-    // console.log("headers:" + headers);
-    lang = data;
-    p("Set!");
-    p(lang);
-});
+function getRepoJSON(repository){
+    var ghrepo = client.repo(repository);
+    var json = {date: null,
+                languages: {}};
+    ghrepo.info(function(err, data, headers){
+        json.date = data.created_at;
+    });
+    ghrepo.languages(function(err, data, headers){
+        json.languages = data;
+    });
+}
 
-var info;
+var test = getRepoJSON('jlmartin9/CIHSP');
 
-ghrepo.info(function(err, data, headers) {
-    info = data.created_at;
-    p(info);
-});
+//Start Mongo and populate database with GitHub's data
 
-//Start Express and Socket.io
+var db = mongo('statistics');
+var collection = db.collection('collection');
+
+//Start Express, Socket.io
 
 var express = require('express');
 var app = express();
@@ -38,7 +41,7 @@ var app = express();
 app.use(express.static(__dirname + '/public'));
 
 var server = app.listen('8888', function() {
-    console.log('Express server listening on port 8888');
+    p('Express server listening on port 8888');
 })
 
 var io = socketio.listen(server);
@@ -53,13 +56,13 @@ io.sockets.on('connection', function(socket) {
      */
     socket.on('getLang', function(lang) {
         //console.log('Test!');
-        console.log(lang);
+        p(lang);
     });
 
     socket.on('getRepo', function(repo) {
-        console.log(repo);
+        p(repo);
     });
-    
+
     /**
      * getRepoBreakdown(lang)
      * @param var lang - language to retrieve breakdown for
