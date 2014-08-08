@@ -17,39 +17,75 @@ var client = github.client();
 
 function getRepoJSON(repository) {
     var ghrepo = client.repo(repository);
+    //p(ghrepo);
     var json = {
         date: null,
         languages: {}
     };
-    json.date = getRepoDate(ghrepo);
-    json.languages = getRepoLang(ghrepo);
-    return json;
-}
-
-function getRepoDate(ghrepo) {
-    return new Promise(function(resolve) {
-        var date = null;
-        ghrepo.info(function(err, data, headers) {
-            date = data.created_at;
-            resolve(date);
+    //var jsonPromise = new Promise(
+    //function(resolve, reject) {
+    var datePromise = new Promise(
+        function(resolve, reject) {
+            ghrepo.info(function(err, data, headers) {
+                json.date = data.created_at;
+                p("date: ");
+                p(json.date);
+                resolve(json);
+            });
         });
-        //resolve(date);
-    });
-}
-
-function getRepoLang(ghrepo) {
-    return new Promise(function(resolve) {
-        var lang = {};
-        ghrepo.languages(function(err, data, headers) {
-            lang = data;
-            resolve(lang);    
+    var langPromise = new Promise(
+        function(resolve, reject) {
+            ghrepo.languages(function(err, data, headers) {
+                json.languages = data;
+                p("lang: ");
+                p(json.languages);
+                resolve(json);
+            });
         });
-        //resolve(lang);
+    //resolve(json);
+    // });
+    // jsonPromise.then(function(json) {
+    datePromise.then(function(j) {
+        json = j;
+        p("j");
+        p(json);
     });
-}
+    langPromise.then(function(k) {
+        json = k;
+        p("k");
+        p(json);
+    });
+    p("Hello");
+    p(json);
+    //});
 
-var test = getRepoJSON('jlmartin9/CIHSP');
-p(test);
+    // ghrepo.languages(function(err, data, headers) {
+    //     json.languages = data;
+    //     p("lang: ");
+    //     p(json.languages);
+    // });
+    //insert json into MongoDB
+    //return json;
+};
+
+// function getRepoDate(ghrepo) {
+//     //return new Promise(function(resolve) {
+//     var date = null;
+
+//     //resolve(date);
+//     return date;
+// }
+
+// function getRepoLang(ghrepo) {
+//     //return new Promise(function(resolve) {
+//     var lang = {};
+
+
+//     return lang;
+// }
+
+getRepoJSON('jlmartin9/CIHSP');
+//p("doc: ");
 
 //Start Mongo and populate database with GitHub's data
 
