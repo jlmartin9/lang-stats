@@ -1,5 +1,50 @@
-var p = function(d) {
+function p(d) {
     console.log(d);
+}
+
+function Promise(fn) {
+    var state = 'pending';
+    var value;
+    var deferred = null;
+
+    function resolve(newValue) {
+        if (newValue && typeof newValue.then === 'function') {
+            newValue.then(resolve);
+            return;
+        }
+        state = 'resolved';
+        value = newValue;
+
+        if (deferred) {
+            handle(deferred);
+        }
+    }
+
+    function handle(handler) {
+        if (state === 'pending') {
+            deferred = handler;
+            return;
+        }
+
+        if (!handler.onResolved) {
+            handler.resolve(value);
+            return;
+        }
+
+        var ret = handler.onResolved(value);
+        handler.resolve(ret);
+    }
+
+    this.then = function(onResolved) {
+        return new Promise(function(resolve) {
+            handle({
+                onResolved: onResolved,
+                resolve: resolve
+            });
+        });
+    };
+
+    fn(resolve);
 }
 
 // Modules
@@ -14,19 +59,41 @@ var github = require('octonode');
 
 var client = github.client();
 
-function getRepoJSON(repository){
+function getRepoJSON(repository) {
     var ghrepo = client.repo(repository);
-    var json = {date: null,
-                languages: {}};
-    ghrepo.info(function(err, data, headers){
-        json.date = data.created_at;
+    var json = {
+        date: null,
+        languages: {}
+    };
+    json.date = getRepoDate(ghrepo);
+    json.languages = getRepoLang(ghrepo);
+    return json;
+}
+
+function getRepoDate(ghrepo) {
+    return new Promise(function(resolve) {
+        var date = null;
+        ghrepo.info(function(err, data, headers) {
+            date = data.created_at;
+            //resolve(date);
+        });
+        resolve(date);
     });
-    ghrepo.languages(function(err, data, headers){
-        json.languages = data;
+}
+
+function getRepoLang(ghrepo) {
+    return new Promise(function(resolve) {
+        var lang = {};
+        ghrepo.languages(function(err, data, headers) {
+            lang = data;
+            //resolve(lang);    
+        });
+        resolve(lang);
     });
 }
 
 var test = getRepoJSON('jlmartin9/CIHSP');
+p(test);
 
 //Start Mongo and populate database with GitHub's data
 
