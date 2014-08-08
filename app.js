@@ -2,51 +2,6 @@ function p(d) {
     console.log(d);
 }
 
-function Promise(fn) {
-    var state = 'pending';
-    var value;
-    var deferred = null;
-
-    function resolve(newValue) {
-        if (newValue && typeof newValue.then === 'function') {
-            newValue.then(resolve);
-            return;
-        }
-        state = 'resolved';
-        value = newValue;
-
-        if (deferred) {
-            handle(deferred);
-        }
-    }
-
-    function handle(handler) {
-        if (state === 'pending') {
-            deferred = handler;
-            return;
-        }
-
-        if (!handler.onResolved) {
-            handler.resolve(value);
-            return;
-        }
-
-        var ret = handler.onResolved(value);
-        handler.resolve(ret);
-    }
-
-    this.then = function(onResolved) {
-        return new Promise(function(resolve) {
-            handle({
-                onResolved: onResolved,
-                resolve: resolve
-            });
-        });
-    };
-
-    fn(resolve);
-}
-
 // Modules
 
 var express = require('express');
@@ -54,6 +9,7 @@ var http = require('http');
 var socketio = require('socket.io');
 var mongo = require('mongojs');
 var github = require('octonode');
+var Promise = require('promise');
 
 //Testing repo API
 
@@ -75,9 +31,9 @@ function getRepoDate(ghrepo) {
         var date = null;
         ghrepo.info(function(err, data, headers) {
             date = data.created_at;
-            //resolve(date);
+            resolve(date);
         });
-        resolve(date);
+        //resolve(date);
     });
 }
 
@@ -86,9 +42,9 @@ function getRepoLang(ghrepo) {
         var lang = {};
         ghrepo.languages(function(err, data, headers) {
             lang = data;
-            //resolve(lang);    
+            resolve(lang);    
         });
-        resolve(lang);
+        //resolve(lang);
     });
 }
 
@@ -137,3 +93,48 @@ io.sockets.on('connection', function(socket) {
      */
 
 });
+
+//function Promise(fn) {
+//     var state = 'pending';
+//     var value;
+//     var deferred = null;
+
+//     function resolve(newValue) {
+//         if (newValue && typeof newValue.then === 'function') {
+//             newValue.then(resolve);
+//             return;
+//         }
+//         state = 'resolved';
+//         value = newValue;
+
+//         if (deferred) {
+//             handle(deferred);
+//         }
+//     }
+
+//     function handle(handler) {
+//         if (state === 'pending') {
+//             deferred = handler;
+//             return;
+//         }
+
+//         if (!handler.onResolved) {
+//             handler.resolve(value);
+//             return;
+//         }
+
+//         var ret = handler.onResolved(value);
+//         handler.resolve(ret);
+//     }
+
+//     this.then = function(onResolved) {
+//         return new Promise(function(resolve) {
+//             handle({
+//                 onResolved: onResolved,
+//                 resolve: resolve
+//             });
+//         });
+//     };
+
+//     fn(resolve);
+// }

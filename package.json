@@ -9,9 +9,10 @@
   },
   "dependencies": {
     "express": "*",
-    "socket.io":"*",
-    "octonode":"*",
-    "mongojs":"*"
+    "mongojs": "*",
+    "octonode": "*",
+    "promise": "5.*",
+    "socket.io": "*"
   },
   "devDependencies": {
     "grunt-contrib-jshint": "~0.6.4",
