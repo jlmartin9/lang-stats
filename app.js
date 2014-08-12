@@ -21,7 +21,7 @@ var client = github.client();
 function getRepoJSON(repository) {
     var ghrepo = client.repo(repository);
     //p(ghrepo);
-    
+
     //Initialize JSON
     var json = {
         date: null,
@@ -35,7 +35,7 @@ function getRepoJSON(repository) {
                 function(resolve, reject) {
                     ghrepo.info(function(err, data, headers) {
                         //Strip timestamp off date
-                        var d = data.created_at.substring(0,10);
+                        var d = data.created_at.substring(0, 10);
                         json.date = d;
                         resolve(json);
                     });
@@ -66,17 +66,42 @@ function getRepoJSON(repository) {
     jsonPromise.then(function(json) {
         // p("Done!");
         // p(json);
-        collection.insert(json, function(err, inserted){
-            if(err){
+        collection.insert(json, function(err, inserted) {
+            if (err) {
                 p("Error inserting document.");
-            }else{
+            } else {
                 //p("Document inserted.")
             }
         });
     });
 }; // End of getRepoJSON
 
-getRepoJSON('jlmartin9/CIHSP');
+//getRepoJSON('jlmartin9/CIHSP');
+
+function retrieveData() {
+    p("called");
+    var users;
+    var ghsearch = client.search();
+    
+    var searchPromise = new Promise(
+        function(resolve, reject) {
+            ghsearch.users({
+                q: 'tom+followers:>100',
+                sort: 'created',
+                order: 'asc'
+            }, function(err, data, headers) {
+                p("Users: ");
+                p(data);
+                users = data;
+                resolve(users);
+            });
+        });
+    searchPromise.then(function(users) {
+        p(users);
+    });
+};
+
+retrieveData();
 
 //Start Express, Socket.io
 
