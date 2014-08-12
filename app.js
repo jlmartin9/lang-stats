@@ -6,91 +6,77 @@ function p(d) {
 
 var express = require('express');
 var http = require('http');
+var https = require('https'); // For retrieving GitHub user list
 var socketio = require('socket.io');
-var mongo = require('mongojs');
+var mongojs = require('mongojs');
 var github = require('octonode');
 var Promise = require('promise');
 
-//Testing repo API
+// Create Mongo database and collections
+var db = mongojs('statistics');
+var collection = db.collection('collection');
 
 var client = github.client();
 
 function getRepoJSON(repository) {
     var ghrepo = client.repo(repository);
     //p(ghrepo);
+    
+    //Initialize JSON
     var json = {
         date: null,
         languages: {}
     };
-    //var jsonPromise = new Promise(
-    //function(resolve, reject) {
-    var datePromise = new Promise(
+
+    //Use a promise to asynchronously resolve JSON fields with GitHub API
+    var jsonPromise = new Promise(
         function(resolve, reject) {
-            ghrepo.info(function(err, data, headers) {
-                json.date = data.created_at;
-                p("date: ");
-                p(json.date);
-                resolve(json);
+            var datePromise = new Promise(
+                function(resolve, reject) {
+                    ghrepo.info(function(err, data, headers) {
+                        //Strip timestamp off date
+                        var d = data.created_at.substring(0,10);
+                        json.date = d;
+                        resolve(json);
+                    });
+                }); //End of datePromise
+            var langPromise = new Promise(
+                function(resolve, reject) {
+                    ghrepo.languages(function(err, data, headers) {
+                        json.languages = data;
+                        resolve(json);
+                    });
+                }); //End of langPromise
+
+            //Hack-y resolving of promises
+            datePromise.then(function(dateJSON) {
+                //p("JSON from date promise: ");
+                //p(dateJSON);
+                json = dateJSON;
+            }).then(function() {
+                langPromise.then(function(langJSON) {
+                    // p("JSON from lang promise: ");
+                    // p(langJSON);
+                    json = langJSON;
+                    // p("About to resolve")
+                    resolve(json);
+                });
             });
+        }); //End of jsonPromise
+    jsonPromise.then(function(json) {
+        // p("Done!");
+        // p(json);
+        collection.insert(json, function(err, inserted){
+            if(err){
+                p("Error inserting document.");
+            }else{
+                //p("Document inserted.")
+            }
         });
-    var langPromise = new Promise(
-        function(resolve, reject) {
-            ghrepo.languages(function(err, data, headers) {
-                json.languages = data;
-                p("lang: ");
-                p(json.languages);
-                resolve(json);
-            });
-        });
-    //resolve(json);
-    // });
-    // jsonPromise.then(function(json) {
-    datePromise.then(function(j) {
-        json = j;
-        p("j");
-        p(json);
     });
-    langPromise.then(function(k) {
-        json = k;
-        p("k");
-        p(json);
-    });
-    p("Hello");
-    p(json);
-    //});
-
-    // ghrepo.languages(function(err, data, headers) {
-    //     json.languages = data;
-    //     p("lang: ");
-    //     p(json.languages);
-    // });
-    //insert json into MongoDB
-    //return json;
-};
-
-// function getRepoDate(ghrepo) {
-//     //return new Promise(function(resolve) {
-//     var date = null;
-
-//     //resolve(date);
-//     return date;
-// }
-
-// function getRepoLang(ghrepo) {
-//     //return new Promise(function(resolve) {
-//     var lang = {};
-
-
-//     return lang;
-// }
+}; // End of getRepoJSON
 
 getRepoJSON('jlmartin9/CIHSP');
-//p("doc: ");
-
-//Start Mongo and populate database with GitHub's data
-
-var db = mongo('statistics');
-var collection = db.collection('collection');
 
 //Start Express, Socket.io
 
